@@ -9,7 +9,7 @@ Para la verificación vamos a usar algunos comandos, primero debemos tener Pytho
 - "python --version"
 - "pip --version"
 
->Nota: si alguna de estas no sale, habra que configirar lo anterior dicho.
+>Si alguna de estas no sale, habra que configirar lo anterior dicho.
 >
 >PIP es una herramienta con la que instalacion lo que necesitamos de python, es como el NPM que se usa en Angular.
 
