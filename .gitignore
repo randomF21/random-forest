@@ -1,0 +1,44 @@
+# Entorno virtual
+venv/
+
+# Archivos y carpetas de configuración del entorno
+*.env
+*.venv
+.env
+.venv
+*.enc
+*.pem
+
+# Archivos de configuración del sistema operativo
+.DS_Store
+Thumbs.db
+
+# Archivos de caché de Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Archivos de migración (opcionales)
+db.sqlite3
+*.sqlite3
+
+# Archivos de logs
+*.log
+*.pot
+
+# Archivos de configuración de IDEs y editores de texto
+.vscode/
+.idea/
+*.swp
+
+# Archivos generados por herramientas
+staticfiles/
+media/
+node_modules/
+coverage/
+*.coverage
+htmlcov/
+
+# Archivos de dependencias
+pip-log.txt
+pip-delete-this-directory.txt
