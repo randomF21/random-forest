@@ -78,11 +78,11 @@ def Login(request):
     # en la excepcion manejamos si el usuario no existe
     except User.DoesNotExist:
         # si no existe el usuario hara:
-        return Response({"error": "Credenciales incorrectas"}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"error": "Credenciales Incorrectas"}, status=status.HTTP_404_NOT_FOUND)
     # generamos el token 
     refresh = RefreshToken.for_user(user)
     return Response({
-            #'refre': str(refresh), # permite "recargar" el token
+            'mensaje': 'Credenciales Correctas',
             'token': str(refresh.access_token), # token de acceso con caducidad 
             'usuario': {
                 'id': user.id,
