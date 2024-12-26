@@ -1,12 +1,14 @@
 from django.shortcuts import render
-from django.contrib.auth.models import User
+#from django.contrib.auth.models import User
+
+from .models import CustomUser, Rol
 
 from .serializer import UsuarioSerializer
 #from .models import Usuario
 
 from rest_framework import viewsets, status
 from rest_framework.response import Response
-from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.decorators import api_view, authentication_classes, permission_classes, action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -16,9 +18,21 @@ from rest_framework_simplejwt.tokens import RefreshToken
 # en teoria este es todo el crud que vamos a usar por lo menos para este modelo
 class UsuarioView(viewsets.ModelViewSet):
     serializer_class = UsuarioSerializer
-    queryset = User.objects.all()
-    authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
+    queryset = CustomUser.objects.all()
+    # authentication_classes = [JWTAuthentication]
+    # permission_classes = [IsAuthenticated]
+    
+    @action(detail=True, methods=['post'])
+    def assign_role(self, request, pk=None): 
+        user = self.get_object() 
+        role_id = request.data.get('role_id')
+        try: 
+            role = Rol.objects.get(id=role_id) 
+            user.rol = role 
+            user.save() 
+            return Response({'status': 'rol asignado'}) 
+        except Rol.DoesNotExist: 
+            return Response({'error': 'rol no encontrado'}, status=404)
     
 
 # Funciones para el registro de usuarios
@@ -27,7 +41,7 @@ def Registro(request):
     # tomamos el valor de email y guaramos
     email = request.data.get('email')
     # validamos si este existe
-    if User.objects.filter(email=email).exists():
+    if CustomUser.objects.filter(email=email).exists():
         # en caso de que exista enviamos el siguiente mensaje y error
         return Response({
             'mensaje': 'El correo ya esta registrado',
@@ -70,19 +84,18 @@ def Login(request):
     # hacemos un try para buscar
     try:
         # buscamos al usuario
-        user = User.objects.get(username=username)
+        user = CustomUser.objects.get(username=username)
         # verificamos el contraseña
         if not user.check_password(password):
             # si esta incorrecta hara:
             return Response({"error": "Credenciales incorrectas"}, status=status.HTTP_400_BAD_REQUEST)
     # en la excepcion manejamos si el usuario no existe
-    except User.DoesNotExist:
+    except CustomUser.DoesNotExist:
         # si no existe el usuario hara:
         return Response({"error": "Credenciales Incorrectas"}, status=status.HTTP_404_NOT_FOUND)
     # generamos el token 
     refresh = RefreshToken.for_user(user)
     return Response({
-            'mensaje': 'Credenciales Correctas',
             'token': str(refresh.access_token), # token de acceso con caducidad 
             'usuario': {
                 'id': user.id,

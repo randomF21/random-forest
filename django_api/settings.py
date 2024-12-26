@@ -50,6 +50,8 @@ INSTALLED_APPS = [
     'django_extensions',
 ]
 
+AUTH_USER_MODEL = 'usuario.CustomUser'  # Reemplaza 'tu_app' con el nombre de tu app
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -173,3 +175,6 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
 }
+
+
+
