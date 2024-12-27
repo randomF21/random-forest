@@ -19,32 +19,30 @@ from rest_framework_simplejwt.tokens import RefreshToken
 class UsuarioView(viewsets.ModelViewSet):
     serializer_class = UsuarioSerializer
     queryset = CustomUser.objects.all()
-    # authentication_classes = [JWTAuthentication]
-    # permission_classes = [IsAuthenticated]
-    
-    @action(detail=True, methods=['post'])
-    def assign_role(self, request, pk=None): 
-        user = self.get_object() 
-        role_id = request.data.get('role_id')
-        try: 
-            role = Rol.objects.get(id=role_id) 
-            user.rol = role 
-            user.save() 
-            return Response({'status': 'rol asignado'}) 
-        except Rol.DoesNotExist: 
-            return Response({'error': 'rol no encontrado'}, status=404)
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
     
 
 # Funciones para el registro de usuarios
 @api_view(['POST'])
 def Registro(request):
-    # tomamos el valor de email y guaramos
+    # tomamos el valor de email y guardamos
     email = request.data.get('email')
     # validamos si este existe
     if CustomUser.objects.filter(email=email).exists():
         # en caso de que exista enviamos el siguiente mensaje y error
         return Response({
-            'mensaje': 'El correo ya esta registrado',
+            'error': 'El correo ya esta registrado',
+            }, status=status.HTTP_400_BAD_REQUEST
+        )
+        
+    # tomamos el valor del rol y guardamos
+    rol_id = request.data.get('rol')
+    # validamos si este existe
+    if not Rol.objects.filter(id=rol_id).exists():
+        # en caso de que exista enviamos el siguiente mensaje y error
+        return Response({
+            'error': 'El rol es inválido',
             }, status=status.HTTP_400_BAD_REQUEST
         )
     
@@ -54,13 +52,17 @@ def Registro(request):
     if serializer.is_valid():
         user = serializer.save()                # si lo son, los enviamos a la funcion para crear
         refresh = RefreshToken.for_user(user)   # generamos el token 
+        # convertimos el registro en un JSON para manejarlo
+        user_json = UsuarioSerializer(user).data
         return Response({
             #'refre': str(refresh), # permite "recargar" el token
             'token': str(refresh.access_token), # token de acceso con caducidad 
             'usuario': {
-                'id': user.id,
-                'username': user.username,
-                'email': user.email
+                'id': user_json['id'],
+                'email': user_json['email'],
+                'nombre': user_json['nombre'],
+                'apellido': user_json['apellido'],
+                'rol': user_json['rol']
             }
             }, status=status.HTTP_201_CREATED   # enviamos el status
         )
@@ -72,19 +74,19 @@ def Registro(request):
 @api_view(['POST'])
 def Login(request):
     # tomamos los valores que nos mandan
-    username = request.data.get("username")
+    email = request.data.get("email")
     password = request.data.get("password")
     # validamos que venga correctos
-    if not username or not password:
+    if not email or not password:
         # retornamos un error en caso de que no sean validos
         return Response({
-            "error": "El usuario y la contraseña son requeridos"
+            "error": "El email y la contraseña son requeridos"
             }, status=status.HTTP_401_UNAUTHORIZED
         )
     # hacemos un try para buscar
     try:
         # buscamos al usuario
-        user = CustomUser.objects.get(username=username)
+        user = CustomUser.objects.get(email=email)
         # verificamos el contraseña
         if not user.check_password(password):
             # si esta incorrecta hara:
@@ -93,14 +95,18 @@ def Login(request):
     except CustomUser.DoesNotExist:
         # si no existe el usuario hara:
         return Response({"error": "Credenciales Incorrectas"}, status=status.HTTP_404_NOT_FOUND)
-    # generamos el token 
+    # convertimos el registro en un JSON para manejarlo
+    user_json = UsuarioSerializer(user).data
+    # generamos el token
     refresh = RefreshToken.for_user(user)
     return Response({
             'token': str(refresh.access_token), # token de acceso con caducidad 
             'usuario': {
-                'id': user.id,
-                'username': user.username,
-                'email': user.email
+                'id': user_json['id'],
+                'email': user_json['email'],
+                'nombre': user_json['nombre'],
+                'apellido': user_json['apellido'],
+                'rol': user_json['rol']
             }
             }, status=status.HTTP_200_OK   # enviamos el status
         )
