@@ -35,19 +35,15 @@ def Registro(request):
             'error': 'El correo ya esta registrado',
             }, status=status.HTTP_400_BAD_REQUEST
         )
-        
-    # tomamos el valor del rol y guardamos
-    rol_id = request.data.get('rol')
-    # validamos si este existe
-    if not Rol.objects.filter(id=rol_id).exists():
-        # en caso de que exista enviamos el siguiente mensaje y error
-        return Response({
-            'error': 'El rol es inválido',
-            }, status=status.HTTP_400_BAD_REQUEST
-        )
+    
+    # Asignamos un rol "quemado" para el registro
+    rol_id = 3
+    # Agregamos el rol manualmente a los datos que enviamos al serializer
+    data = request.data.copy()  # Hacemos una copia de los datos enviados
+    data['rol'] = rol_id        # Agregamos el rol quemado
     
     # guardar en una variable los datos 
-    serializer = UsuarioSerializer(data=request.data)
+    serializer = UsuarioSerializer(data=data)
     # validamos si los datos son valido
     if serializer.is_valid():
         user = serializer.save()                # si lo son, los enviamos a la funcion para crear
