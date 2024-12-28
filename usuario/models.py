@@ -32,6 +32,7 @@ class CustomUser(AbstractBaseUser):
     activo          = models.BooleanField(default=True)
     # Puedes agregar otros campos que necesites
     rol = models.ForeignKey(Rol, on_delete=models.CASCADE, null=False, blank=False)
+    last_login = None
 
     objects = CustomUserManager()
 
