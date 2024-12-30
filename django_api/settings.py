@@ -51,6 +51,8 @@ INSTALLED_APPS = [
     'modelo_random.apps.ModeloRandomConfig',
 ]
 
+AUTH_USER_MODEL = 'usuario.CustomUser'  # Reemplaza 'tu_app' con el nombre de tu app
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -97,7 +99,7 @@ WSGI_APPLICATION = 'django_api.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'db_django',
+        'NAME': 'db_django', # db_django
         'USER': 'root',
         'PASSWORD': '1234',
         'HOST': '127.0.0.1',
@@ -174,3 +176,6 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
 }
+
+
+

@@ -2,7 +2,8 @@
 1. clonar
 2. verificar las dependencias y funciones
 3. crear un ambiente de Python para trabajar en el
-4. instalar dependencias y demás
+4. instalar dependencias
+5. Ejecutar Seed
 
 ### Verificar Dependencias
 Para la verificación vamos a usar algunos comandos, primero debemos tener Python instalado y configurado en las "Variables de Entorno" para Windows, en el CMD ejecutamos:
