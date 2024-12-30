@@ -26,7 +26,7 @@ class Command(BaseCommand):
             },
             {
                 'password': '1234',
-                'email': 'admin24@gmail.com', # quitar el 24
+                'email': 'admin@gmail.com',
                 'nombre':'admin',
                 'apellido':'normal',
                 'tipo_documento':'Registro Civil',
