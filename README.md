@@ -2,7 +2,8 @@
 1. clonar
 2. verificar las dependencias y funciones
 3. crear un ambiente de Python para trabajar en el
-4. instalar dependencias y demás
+4. instalar dependencias
+5. Ejecutar Seed
 
 ### Verificar Dependencias
 Para la verificación vamos a usar algunos comandos, primero debemos tener Python instalado y configurado en las "Variables de Entorno" para Windows, en el CMD ejecutamos:
@@ -27,4 +28,10 @@ Con el ambiente configurado y seleccionado instalaremos las dependencias y libre
 
 Podemos ejecutar el comando "python manage.py runserver" para verificar que está funcionando correctamente.
 
+### Ejecutar Seed
+Para ejecutar las Seed usamos "python manage.py seed_all", esto ejecutara las semillas definidas y mostrata un 3 mensajes en consola (1 por cada seed, incluyendo a la que ejeucta a las demas).
+
+Se crearan 3 usuarios, un admin, un superadmin y un usuario normal.
+
+Para acceder con estos al sistema, podemos usar <ins>super</ins>, <ins>admin</ins> o <ins>user</ins> acompañado de '<ins>@gmail.com</ins>'
 
