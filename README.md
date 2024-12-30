@@ -31,7 +31,7 @@ Podemos ejecutar el comando "python manage.py runserver" para verificar que est�
 ### Ejecutar Seed
 Para ejecutar las Seed usamos "python manage.py seed_all", esto ejecutara las semillas definidas y mostrata un 3 mensajes en consola (1 por cada seed, incluyendo a la que ejeucta a las demas).
 
-Se crearan 3 usuarios, un admin, un superadmin y un usuario normal.
+Se crearan 3 usuarios, un superadmin, un admin y un usuario normal.
 
-Para acceder con estos al sistema, podemos usar <ins>super</ins>, <ins>admin</ins> o <ins>user</ins> acompañado de '<ins>@gmail.com</ins>'
+Para acceder con estos al sistema, podemos usar <ins>super</ins>, <ins>admin</ins> o <ins>user</ins> acompañado de '<ins>@gmail.com</ins>'; la contraseña de estos 3 usuarios es 1234.
 
