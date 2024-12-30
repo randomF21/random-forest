@@ -27,4 +27,6 @@ Con el ambiente configurado y seleccionado instalaremos las dependencias y libre
 
 Podemos ejecutar el comando "python manage.py runserver" para verificar que está funcionando correctamente.
 
+Realizar migraciones python manage.py migrate
+
 

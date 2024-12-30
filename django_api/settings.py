@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'usuario',
     # estensiones de utilidad
     'django_extensions',
+    'modelo_random.apps.ModeloRandomConfig',
 ]
 
 MIDDLEWARE = [
