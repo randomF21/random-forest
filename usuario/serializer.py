@@ -19,7 +19,7 @@ class UsuarioSerializer(serializers.ModelSerializer):
 
     class Meta:
         model   = User
-        fields  = ['id', 'password', 'email', 'nombre', 'apellido', 'tipo_documento', 'num_documento', 'telefono', 'nacimiento', 'activo', 'rol']
+        fields  = ['id', 'password', 'email', 'nombre', 'apellido', 'tipo_documento', 'num_documento', 'telefono', 'nacimiento', 'activo', 'rol', 'ruta_imagen']
         
     def create(self, validated_data):
         rol_id = validated_data.pop('rol').id
