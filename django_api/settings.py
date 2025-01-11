@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'usuario',
     # estensiones de utilidad
     'django_extensions',
+    'modelo_random.apps.ModeloRandomConfig',
 ]
 
 AUTH_USER_MODEL = 'usuario.CustomUser'  # Reemplaza 'tu_app' con el nombre de tu app
