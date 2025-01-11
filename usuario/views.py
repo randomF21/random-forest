@@ -1,10 +1,13 @@
-from django.shortcuts import render
-#from django.contrib.auth.models import User
-
 from .models import CustomUser, Rol
 
 from .serializer import UsuarioSerializer
-#from .models import Usuario
+
+from django.shortcuts import render
+from django.conf import settings
+
+import os
+from PIL import Image
+from datetime import datetime
 
 from rest_framework import viewsets, status
 from rest_framework.response import Response
@@ -13,14 +16,66 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.tokens import RefreshToken
 
-# Create your views here.
-
 # en teoria este es todo el crud que vamos a usar por lo menos para este modelo
 class UsuarioView(viewsets.ModelViewSet):
     serializer_class = UsuarioSerializer
     queryset = CustomUser.objects.all()
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
+
+    # Función para actualizar la imagen
+    @action(detail=True, methods=['put'], url_path='act-img')
+    def Actualizar_imagen(self, request, pk=None):
+        user = self.get_object()
+
+        # Validar si la imagen está en el request
+        imagen = request.FILES.get('imagen')
+        if not imagen:
+            return Response({'error': 'No se envió ninguna imagen'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Validar que sea una imagen válida
+        if not imagen.content_type.startswith('image/'):
+            return Response({'error': 'El archivo no es una imagen válida'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Definir la ruta donde se guardará la imagen
+        carpeta_usuario = os.path.join(settings.MEDIA_ROOT, f'usuarios/{user.id}')
+        if not os.path.exists(carpeta_usuario):
+            os.makedirs(carpeta_usuario)  # Crear carpeta si no existe
+
+        # Eliminar la imagen anterior si existe
+        if user.ruta_imagen:  # Si hay una ruta de imagen registrada
+            ruta_anterior = os.path.join(settings.MEDIA_ROOT, user.ruta_imagen)
+            if os.path.exists(ruta_anterior):
+                os.remove(ruta_anterior)  # Eliminar la imagen anterior
+
+        # Generar un nombre único basado en la fecha y hora
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')  # Formato: AñoMesDía_HoraMinutoSegundo
+        nombre_imagen = f'{timestamp}.webp'
+        ruta_imagen = os.path.join(carpeta_usuario, nombre_imagen)
+
+        # Convertir la imagen a .webp y guardarla
+        try:
+            with Image.open(imagen) as img:
+                img = img.convert('RGB')  # Asegurarse de que sea RGB para webp
+                img.save(ruta_imagen, 'webp')
+        except Exception as e:
+            return Response({'error': f'Error al procesar la imagen: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Actualizar la ruta de la imagen en el modelo del usuario
+        user.ruta_imagen = f'usuarios/{user.id}/{nombre_imagen}'
+        user.save()
+        user_json = UsuarioSerializer(user).data
+        return Response({
+            'message': 'Imagen actualizada correctamente',
+            'usuario': {
+                'id': user_json['id'],
+                'email': user_json['email'],
+                'nombre': user_json['nombre'],
+                'apellido': user_json['apellido'],
+                'rol': user_json['rol'],
+                'imagen': user_json['ruta_imagen']
+            }
+        }, status=status.HTTP_200_OK)
     
 
 # Funciones para el registro de usuarios
@@ -60,8 +115,7 @@ def Registro(request):
                 'apellido': user_json['apellido'],
                 'rol': user_json['rol']
             }
-            }, status=status.HTTP_201_CREATED   # enviamos el status
-        )
+        }, status=status.HTTP_201_CREATED)   # enviamos el status
         
     # si fallo enviamos status correspondiente
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST) 
@@ -102,20 +156,14 @@ def Login(request):
                 'email': user_json['email'],
                 'nombre': user_json['nombre'],
                 'apellido': user_json['apellido'],
-                'rol': user_json['rol']
+                'rol': user_json['rol'],
+                'imagen': user_json['ruta_imagen']
             }
             }, status=status.HTTP_200_OK   # enviamos el status
         )
 
 
-@api_view(['GET'])
-@authentication_classes([JWTAuthentication])
-@permission_classes([IsAuthenticated])
-def Perfil(request):
-    
-    print('----// Estamos en perfil pa colocar el CRUD AQUI //----')
-    
-    return Response("autorizado para entrar al sistemaaaaa", status=status.HTTP_200_OK)
-    
-    
+
+
+
     

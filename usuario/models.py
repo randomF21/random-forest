@@ -30,6 +30,7 @@ class CustomUser(AbstractBaseUser):
     telefono        = models.CharField(max_length=10)
     nacimiento      = models.DateField(null=False, blank=False)
     activo          = models.BooleanField(default=True)
+    ruta_imagen     = models.TextField(null=True, blank=True)
     # Puedes agregar otros campos que necesites
     rol = models.ForeignKey(Rol, on_delete=models.CASCADE, null=False, blank=False)
     last_login = None

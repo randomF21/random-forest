@@ -9,6 +9,15 @@ venv/
 *.enc
 *.pem
 
+# Ignorar todo el contenido de foto_user
+/foto_user/*
+
+# Excepto la carpeta misma
+!/foto_user/
+
+# Puedes incluir un archivo vacío para asegurarte de que Git rastree la carpeta
+/foto_user/.gitkeep
+
 # Archivos de configuración del sistema operativo
 .DS_Store
 Thumbs.db
