@@ -24,21 +24,14 @@ class CustomUserManager(BaseUserManager):
 class CustomUser(AbstractBaseUser):
     email           = models.EmailField(null=False, unique=True)
     nombre          = models.CharField(max_length=70, null=False, blank=False)
-    apellido        = models.CharField(max_length=70)
-    tipo_documento  = models.CharField(max_length=50, null=False, blank=False)
-    num_documento   = models.CharField(max_length=11, null=False, blank=False)
-    telefono        = models.CharField(max_length=10)
-    nacimiento      = models.DateField(null=False, blank=False)
-    activo          = models.BooleanField(default=True)
     ruta_imagen     = models.TextField(null=True, blank=True)
     # Puedes agregar otros campos que necesites
     rol = models.ForeignKey(Rol, on_delete=models.CASCADE, null=False, blank=False)
-    last_login = None
 
     objects = CustomUserManager()
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = [email, nombre, tipo_documento, num_documento, telefono, nacimiento, rol]
+    REQUIRED_FIELDS = [email, nombre, rol]
 
     class Meta:
         verbose_name = 'User'

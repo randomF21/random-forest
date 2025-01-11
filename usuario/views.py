@@ -71,7 +71,6 @@ class UsuarioView(viewsets.ModelViewSet):
                 'id': user_json['id'],
                 'email': user_json['email'],
                 'nombre': user_json['nombre'],
-                'apellido': user_json['apellido'],
                 'rol': user_json['rol'],
                 'imagen': user_json['ruta_imagen']
             }
@@ -112,7 +111,6 @@ def Registro(request):
                 'id': user_json['id'],
                 'email': user_json['email'],
                 'nombre': user_json['nombre'],
-                'apellido': user_json['apellido'],
                 'rol': user_json['rol']
             }
         }, status=status.HTTP_201_CREATED)   # enviamos el status
@@ -155,7 +153,6 @@ def Login(request):
                 'id': user_json['id'],
                 'email': user_json['email'],
                 'nombre': user_json['nombre'],
-                'apellido': user_json['apellido'],
                 'rol': user_json['rol'],
                 'imagen': user_json['ruta_imagen']
             }

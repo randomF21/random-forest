@@ -7,8 +7,7 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         roles = [
             'superadministrador',
-            'administrador',
-            'usuario'
+            'administrador'
         ]
 
         for role in roles:
