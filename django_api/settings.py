@@ -88,28 +88,28 @@ WSGI_APPLICATION = 'django_api.wsgi.application'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.mysql',
-#         'NAME': 'db_django', # db_django
-#         'USER': 'root',
-#         'PASSWORD': '1234',
-#         'HOST': '127.0.0.1',
-#         'PORT': '3306',
-#     }
-# }
-
-
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'db_django',
-        'USER': 'postgres',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'db_django', # db_django
+        'USER': 'root',
         'PASSWORD': '1234',
-        'HOST': 'localhost',  # O la dirección del servidor de tu base de datos si no está en tu máquina local
-        'PORT': '5432',  # El puerto por defecto de PostgreSQL
+        'HOST': '127.0.0.1',
+        'PORT': '3306',
     }
 }
+
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': 'db_django',
+#         'USER': 'postgres',
+#         'PASSWORD': '1234',
+#         'HOST': 'localhost',  # O la dirección del servidor de tu base de datos si no está en tu máquina local
+#         'PORT': '5432',  # El puerto por defecto de PostgreSQL
+#     }
+# }
 
 
 # Password validation
