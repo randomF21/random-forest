@@ -2,9 +2,13 @@ import os
 import pandas as pd
 import joblib
 import re
+from datetime import datetime  # Importar datetime
+from rest_framework.parsers import MultiPartParser
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from collections import Counter
+from django.db.models import Count, Q
+from .models import Prediccion  # Asegúrate de importar el modelo Prediccion
 
 
 # Cargar el modelo completo al inicio
@@ -238,6 +242,417 @@ class GeneratePredictionsAPIView(APIView):
                 'message': str(e),
                 'type': str(type(e))
             }, status=500)
+
+
+class CargarCSVAPIView(APIView):
+    parser_classes = [MultiPartParser]
+
+    def post(self, request):
+        try:
+            # Obtener el archivo desde la solicitud
+            file = request.FILES.get('file')
+            if not file:
+                return Response({'status': 'error', 'message': 'No se proporcionó ningún archivo'}, status=400)
+
+            # Leer el CSV en un DataFrame
+            df = pd.read_csv(file)
+            
+            # Normalizar los nombres de las columnas
+            df.columns = df.columns.str.strip().str.upper().str.replace(' ', '_')
+
+            # Validar columnas necesarias
+            required_columns = ['EDAD', 'SEXO_BIOLOGICO', 'ESCOLARIDAD', 'ESTRATO_SOCIOECONOMICO']
+            for col in required_columns:
+                if col not in df.columns:
+                    return Response({'status': 'error', 'message': f'Falta la columna {col}'}, status=400)
+
+            # Procesar el DataFrame (similar a cómo lo hiciste para entrenar el modelo)
+            df['EDAD'] = df['EDAD'].apply(procesar_edad)
+            df = df.fillna('No describe')
+            data_encoded = pd.get_dummies(df, drop_first=True)
+
+            # Asegurar que todas las columnas del modelo estén presentes
+            columns_used = modelo_completo['columns_used']
+            for col in columns_used:
+                if col not in data_encoded.columns:
+                    data_encoded[col] = 0
+            data_encoded = data_encoded[columns_used]
+
+            # Generar predicciones
+            modelo = modelo_completo['model']
+            predictions = modelo.predict(data_encoded)
+            probabilities = modelo.predict_proba(data_encoded)
+
+            # Mapear predicciones a texto
+            pred_mapping = {0: "No Suicidio", 1: "Suicidio"}
+            df['Prediccion'] = [pred_mapping[pred] for pred in predictions]
+            df['Probabilidad_Clase_1'] = probabilities[:, 1]
+            
+             # Guardar predicciones en la base de datos
+            for _, row in df.iterrows():
+                Prediccion.objects.create(
+                    edad=row['EDAD'],
+                    sexo_biologico=row['SEXO_BIOLOGICO'],
+                    escolaridad=row['ESCOLARIDAD'],
+                    estrato_socioeconomico=row['ESTRATO_SOCIOECONOMICO'],
+                    prediccion=row['Prediccion'],
+                    probabilidad_clase_1=row['Probabilidad_Clase_1'],
+                    fecha=datetime.now()
+                )
+
+            # Responder con las predicciones
+            return Response({
+                'status': 'success',
+                'predicciones': df.to_dict(orient='records')
+            })
+
+        except Exception as e:
+            return Response({'status': 'error', 'message': str(e)}, status=500)
+        
+ 
+
+
+class ConsultarPrediccionesGuardadasAPIView(APIView):
+    def get(self, request):
+        try:
+            # Obtener el parámetro de fecha desde la solicitud
+            fecha = request.query_params.get('fecha', None)
+
+            if fecha:
+                try:
+                    fecha_datetime = datetime.strptime(fecha, '%Y-%m-%d')
+                except ValueError:
+                    return Response({
+                        'status': 'error',
+                        'message': 'El formato de fecha debe ser YYYY-MM-DD'
+                    }, status=400)
+                
+                predicciones = Prediccion.objects.filter(fecha__date=fecha_datetime)
+            else:
+                predicciones = Prediccion.objects.filter(es_entrenamiento=True)
+
+            # Validar si existen predicciones
+            if not predicciones.exists():
+                return Response({
+                    'status': 'error',
+                    'message': 'No se encontraron predicciones para la fecha seleccionada o de entrenamiento.'
+                }, status=404)
+
+            # Convertir las predicciones a DataFrame para procesamiento
+            predicciones_list = list(predicciones.values(
+                'edad',
+                'sexo_biologico',
+                'escolaridad',
+                'estrato_socioeconomico',
+                'prediccion',
+                'probabilidad_clase_1'
+            ))
+            df = pd.DataFrame(predicciones_list)
+
+            # Validar columnas requeridas
+            required_columns = ['edad', 'sexo_biologico', 'escolaridad', 'estrato_socioeconomico', 'prediccion']
+            for col in required_columns:
+                if col not in df.columns or df[col].isnull().all():
+                    return Response({
+                        'status': 'error',
+                        'message': f'La columna {col} no tiene datos válidos.'
+                    }, status=400)
+
+            # Procesar edad
+            df['edad'] = df['edad'].apply(procesar_edad)
+
+            # Procesar género
+            totales_genero = df['sexo_biologico'].apply(extraer_totales_genero)
+            df = pd.concat([df, totales_genero], axis=1)
+
+            # Calcular tasa de suicidio por género
+            suicidio_mask = df['prediccion'] == 'Suicidio'
+            
+            suicidio_hombres = df[suicidio_mask]['Masculino'].sum()
+            total_hombres = df['Masculino'].sum()
+            
+            suicidio_mujeres = df[suicidio_mask]['Femenino'].sum()
+            total_mujeres = df['Femenino'].sum()
+
+            tasa_suicidio_genero = {
+                'Hombres': suicidio_hombres / total_hombres if total_hombres > 0 else 0,
+                'Mujeres': suicidio_mujeres / total_mujeres if total_mujeres > 0 else 0
+            }
+
+            # Procesar estrato socioeconómico
+            estrato_totales = Counter()
+            df['estrato_socioeconomico'].apply(lambda x: estrato_totales.update(procesar_estrato_socieconomico(x)))
+
+            # Calcular estadísticas para gráficos
+            stats = {
+                'genero': {
+                    'Femenino': int(total_mujeres),
+                    'Masculino': int(total_hombres)
+                },
+                'prediccion': dict(df['prediccion'].value_counts()),
+                'estrato': dict(estrato_totales),
+                'escolaridad': dict(df['escolaridad'].value_counts()),
+                'tasa_suicidio_genero': tasa_suicidio_genero
+            }
+
+            # Obtener las fechas únicas de las predicciones
+            fechas_disponibles = Prediccion.objects.dates('fecha', 'day').distinct()
+
+            return Response({
+                'status': 'success',
+                'stats': stats,
+                'fechas_disponibles': [fecha.strftime('%Y-%m-%d') for fecha in fechas_disponibles],
+                'data': df.to_dict(orient='records')  # Incluir datos procesados si son necesarios
+            })
+
+        except Exception as e:
+            return Response({
+                'status': 'error',
+                'message': str(e),
+                'type': str(type(e))
+            }, status=500)
+
+
+
+class FechasPrediccionesAPIView(APIView):
+    def get(self, request):
+        try:
+            # Obtener solo las fechas únicas de las predicciones
+            fechas_disponibles = Prediccion.objects.dates('fecha', 'day').distinct()
+            
+            return Response({
+                'status': 'success',
+                'fechas_disponibles': [fecha.strftime('%Y-%m-%d') for fecha in fechas_disponibles]
+            })
+        except Exception as e:
+            return Response({
+                'status': 'error',
+                'message': str(e)
+            }, status=500)
+            
+def procesar_edades(edad):
+    try:
+        edad = int(edad)
+        if edad <= 10:
+            return '0 - 10 años'
+        elif edad <= 20:
+            return '11 - 20 años'
+        elif edad <= 30:
+            return '21 - 30 años'
+        elif edad <= 40:
+            return '31 - 40 años'
+        else:
+            return '>40 años'
+    except ValueError:
+        return 'Sin dato'  # Manejar valores no numéricos
+
+    
+class RealizarPrediccionAPIView(APIView):
+    def post(self, request):
+        try:
+            # Obtener los datos del formulario
+            datos = request.data
+
+            # Validar campos obligatorios
+            required_fields = ['edad', 'sexo_biologico', 'escolaridad', 'estrato_socioeconomico']
+            for field in required_fields:
+                if field not in datos:
+                    return Response({'error': f'El campo {field} es obligatorio.'}, status=400)
+
+            # Mapeo de valores para las columnas categóricas
+            mapeo_edad = {
+                (0, 10): 'EDAD_0 - 10 años',
+                (11, 20): 'EDAD_11 - 20 años',
+                (21, 30): 'EDAD_21 - 30 años',
+                (31, 40): 'EDAD_31 - 40 años',
+                (41, 150): 'EDAD_>40 años'
+            }
+            def mapear_edad(edad):
+                for rango, categoria in mapeo_edad.items():
+                    if rango[0] <= edad <= rango[1]:
+                        return categoria
+                return 'EDAD_Desconocida'
+
+            mapeo_sexo = {'Masculino': 'SEXO_BIOLOGICO_Masculino', 'Femenino': 'SEXO_BIOLOGICO_Femenino'}
+            mapeo_escolaridad = {
+                'Primaria': 'ESCOLARIDAD_Primaria',
+                'Secundaria': 'ESCOLARIDAD_Secundaria',
+                'Universitario': 'ESCOLARIDAD_Universitario'
+            }
+            mapeo_estrato = {
+                'Bajo': 'ESTRATO_SOCIOECONOMICO_Bajo',
+                'Medio': 'ESTRATO_SOCIOECONOMICO_Medio',
+                'Alto': 'ESTRATO_SOCIOECONOMICO_Alto'
+            }
+
+            # Crear el DataFrame
+            df = pd.DataFrame([datos])
+            print("Datos originales:", df)
+
+            # Mapear valores a nombres de columnas del modelo
+            df['EDAD'] = df['edad'].astype(int).apply(mapear_edad)
+            df['SEXO_BIOLOGICO'] = df['sexo_biologico'].map(mapeo_sexo)
+            df['ESCOLARIDAD'] = df['escolaridad'].map(mapeo_escolaridad)
+            df['ESTRATO_SOCIOECONOMICO'] = df['estrato_socioeconomico'].map(mapeo_estrato)
+            print("Datos después del mapeo:", df)
+
+            # Crear un DataFrame con las columnas esperadas por el modelo
+            columnas_usadas = modelo_completo['columns_used']
+            df_final = pd.DataFrame(0, index=[0], columns=columnas_usadas)
+
+            # Rellenar las columnas correspondientes
+            for col in ['EDAD', 'SEXO_BIOLOGICO', 'ESCOLARIDAD', 'ESTRATO_SOCIOECONOMICO']:
+                if df[col][0] in columnas_usadas:
+                    df_final.loc[0, df[col][0]] = 1
+
+            print("Dimensiones del DataFrame final:", df_final.shape)
+            print("Columnas del DataFrame final:", df_final.columns)
+            print("Datos finales antes de predecir:", df_final)
+
+            # Realizar la predicción
+            modelo = modelo_completo['model']
+            prediccion = modelo.predict(df_final)[0]
+            probabilidad = modelo.predict_proba(df_final)[0][1]
+            print("Predicción:", prediccion, "Probabilidad:", probabilidad)
+
+            # Responder con el resultado
+            resultado = {
+                'prediccion': "Suicidio" if prediccion == 1 else "No Suicidio",
+                'probabilidad': probabilidad,
+            }
+            return Response(resultado, status=200)
+
+        except KeyError as e:
+            return Response({'error': f"Columna faltante: {str(e)}"}, status=500)
+        except ValueError as e:
+            return Response({'error': f"Error en los datos: {str(e)}"}, status=500)
+        except Exception as e:
+            return Response({'error': f"Error inesperado: {str(e)}"}, status=500)
+
+
+from django.http import HttpResponse
+import pandas as pd
+
+class DescargarPrediccionesExcelAPIView(APIView):
+    def get(self, request):
+        try:
+            # Obtener el parámetro de fecha
+            fecha = request.query_params.get('fecha', None)
+
+            if fecha:
+                try:
+                    fecha_datetime = datetime.strptime(fecha, '%Y-%m-%d')
+                except ValueError:
+                    return Response({
+                        'status': 'error',
+                        'message': 'El formato de fecha debe ser YYYY-MM-DD'
+                    }, status=400)
+                
+                predicciones = Prediccion.objects.filter(fecha__date=fecha_datetime)
+            else:
+                return Response({
+                    'status': 'error',
+                    'message': 'La fecha es requerida para generar el archivo.'
+                }, status=400)
+
+            # Validar si existen predicciones
+            if not predicciones.exists():
+                return Response({
+                    'status': 'error',
+                    'message': 'No se encontraron predicciones para la fecha seleccionada.'
+                }, status=404)
+
+            # Convertir las predicciones a DataFrame
+            predicciones_list = list(predicciones.values(
+                'edad',
+                'sexo_biologico',
+                'escolaridad',
+                'estrato_socioeconomico',
+                'prediccion',
+                'probabilidad_clase_1'
+            ))
+            df = pd.DataFrame(predicciones_list)
+
+            # Crear archivo Excel
+            response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = f'attachment; filename=predicciones_{fecha}.xlsx'
+            df.to_excel(response, index=False)
+
+            return response
+        except Exception as e:
+            return Response({
+                'status': 'error',
+                'message': str(e)
+            }, status=500)
+
+
+from reportlab.pdfgen import canvas
+
+class DescargarPrediccionesPDFAPIView(APIView):
+    def get(self, request):
+        try:
+            # Obtener el parámetro de fecha
+            fecha = request.query_params.get('fecha', None)
+
+            if fecha:
+                try:
+                    fecha_datetime = datetime.strptime(fecha, '%Y-%m-%d')
+                except ValueError:
+                    return Response({
+                        'status': 'error',
+                        'message': 'El formato de fecha debe ser YYYY-MM-DD'
+                    }, status=400)
+                
+                predicciones = Prediccion.objects.filter(fecha__date=fecha_datetime)
+            else:
+                return Response({
+                    'status': 'error',
+                    'message': 'La fecha es requerida para generar el archivo.'
+                }, status=400)
+
+            # Validar si existen predicciones
+            if not predicciones.exists():
+                return Response({
+                    'status': 'error',
+                    'message': 'No se encontraron predicciones para la fecha seleccionada.'
+                }, status=404)
+
+            # Crear archivo PDF
+            response = HttpResponse(content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename=predicciones_{fecha}.pdf'
+
+            p = canvas.Canvas(response)
+            p.drawString(100, 800, f"Predicciones para la fecha: {fecha}")
+
+            y = 780
+            for prediccion in predicciones:
+                line = f"{prediccion.edad} - {prediccion.sexo_biologico} - {prediccion.prediccion} - Probabilidad: {prediccion.probabilidad_clase_1}"
+                p.drawString(100, y, line)
+                y -= 20
+
+            p.showPage()
+            p.save()
+
+            return response
+        except Exception as e:
+            return Response({
+                'status': 'error',
+                'message': str(e)
+            }, status=500)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
