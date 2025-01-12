@@ -9,6 +9,10 @@ from rest_framework.response import Response
 from collections import Counter
 from django.db.models import Count, Q
 from .models import Prediccion  # Asegúrate de importar el modelo Prediccion
+from reportlab.lib.pagesizes import letter
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 
 
 # Cargar el modelo completo al inicio
@@ -621,17 +625,68 @@ class DescargarPrediccionesPDFAPIView(APIView):
             response = HttpResponse(content_type='application/pdf')
             response['Content-Disposition'] = f'attachment; filename=predicciones_{fecha}.pdf'
 
-            p = canvas.Canvas(response)
-            p.drawString(100, 800, f"Predicciones para la fecha: {fecha}")
+            # Crear el documento PDF
+            doc = SimpleDocTemplate(response, pagesize=letter)
+            elements = []
 
-            y = 780
+            # Estilos
+            styles = getSampleStyleSheet()
+            title_style = ParagraphStyle(
+                'Title',
+                parent=styles['Title'],
+                fontSize=18,
+                spaceAfter=20,
+                alignment=1  # Centrado
+            )
+            header_style = ParagraphStyle(
+                'Header',
+                parent=styles['Normal'],
+                fontSize=12,
+                textColor=colors.white,
+                alignment=1
+            )
+            cell_style = ParagraphStyle(
+                'Cell',
+                parent=styles['Normal'],
+                fontSize=10,
+                alignment=1
+            )
+
+            # Título del PDF
+            title = Paragraph(f"Predicciones para la fecha: {fecha}", title_style)
+            elements.append(title)
+            elements.append(Spacer(1, 20))  # Espacio después del título
+
+            # Datos de la tabla
+            data = [
+                ["Edad", "Sexo", "Predicción", "Probabilidad (Clase 1)"]
+            ]
+
             for prediccion in predicciones:
-                line = f"{prediccion.edad} - {prediccion.sexo_biologico} - {prediccion.prediccion} - Probabilidad: {prediccion.probabilidad_clase_1}"
-                p.drawString(100, y, line)
-                y -= 20
+                row = [
+                    prediccion.edad,
+                    prediccion.sexo_biologico,
+                    prediccion.prediccion,
+                    f"{prediccion.probabilidad_clase_1:.4f}"
+                ]
+                data.append(row)
 
-            p.showPage()
-            p.save()
+            # Crear la tabla
+            table = Table(data)
+            table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.darkblue),  # Fondo del encabezado
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),  # Color del texto del encabezado
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),  # Alinear todo al centro
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),  # Fuente del encabezado
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 12),  # Espaciado inferior del encabezado
+                ('BACKGROUND', (0, 1), (-1, -1), colors.beige),  # Fondo de las filas
+                ('GRID', (0, 0), (-1, -1), 1, colors.black)  # Líneas de la tabla
+            ]))
+
+            elements.append(table)
+
+            # Construir el PDF
+            doc.build(elements)
 
             return response
         except Exception as e:
