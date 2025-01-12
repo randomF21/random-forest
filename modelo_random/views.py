@@ -103,7 +103,6 @@ def procesar_edad(valor):
         # Buscar una sola edad en la línea
         match = re.search(r'\d+\s*años', linea)
         if match:
-            print(f"Edad única encontrada: {match.group(0)}")
             return match.group(0)
 
     return 'Sin dato'
@@ -491,14 +490,14 @@ class RealizarPrediccionAPIView(APIView):
 
             # Crear el DataFrame
             df = pd.DataFrame([datos])
-            print("Datos originales:", df)
+        
 
             # Mapear valores a nombres de columnas del modelo
             df['EDAD'] = df['edad'].astype(int).apply(mapear_edad)
             df['SEXO_BIOLOGICO'] = df['sexo_biologico'].map(mapeo_sexo)
             df['ESCOLARIDAD'] = df['escolaridad'].map(mapeo_escolaridad)
             df['ESTRATO_SOCIOECONOMICO'] = df['estrato_socioeconomico'].map(mapeo_estrato)
-            print("Datos después del mapeo:", df)
+            
 
             # Crear un DataFrame con las columnas esperadas por el modelo
             columnas_usadas = modelo_completo['columns_used']
@@ -509,15 +508,13 @@ class RealizarPrediccionAPIView(APIView):
                 if df[col][0] in columnas_usadas:
                     df_final.loc[0, df[col][0]] = 1
 
-            print("Dimensiones del DataFrame final:", df_final.shape)
-            print("Columnas del DataFrame final:", df_final.columns)
-            print("Datos finales antes de predecir:", df_final)
+            
 
             # Realizar la predicción
             modelo = modelo_completo['model']
             prediccion = modelo.predict(df_final)[0]
             probabilidad = modelo.predict_proba(df_final)[0][1]
-            print("Predicción:", prediccion, "Probabilidad:", probabilidad)
+            
 
             # Responder con el resultado
             resultado = {
