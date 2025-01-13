@@ -89,6 +89,17 @@ WSGI_APPLICATION = 'django_api.wsgi.application'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.mysql',
+#         'NAME': 'nativowe_db_django', # db_django
+#         'USER': 'nativowe_db_django',
+#         'PASSWORD': 'ehl(@Edy}8iJ',
+#         'HOST': '127.0.0.1',
+#         'PORT': '3306',
+#     }
+# }
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
@@ -99,7 +110,6 @@ DATABASES = {
         'PORT': '3306',
     }
 }
-
 
 # DATABASES = {
 #     'default': {

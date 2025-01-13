@@ -13,11 +13,23 @@ from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from django.http import HttpResponse
+from reportlab.pdfgen import canvas
+from sklearn.preprocessing import StandardScaler
+
 
 
 # Cargar el modelo completo al inicio
 modelo_path = os.path.join(os.path.dirname(__file__), 'models', 'random_forest_model_final.joblib')
+modelo1_path = os.path.join(os.path.dirname(__file__), 'models', 'random_forest_model_final1.joblib')
+modelo_scaler = os.path.join(os.path.dirname(__file__), 'models', 'scaler.joblib')
+print("Ruta del scaler:", modelo_scaler)  
 modelo_completo = joblib.load(modelo_path)
+modelo_completo1 = joblib.load(modelo1_path)
+scaler = joblib.load(modelo_scaler)
+
+
+
 
 # Ruta a la carpeta "dataset" dentro del proyecto
 DATA_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dataset')
@@ -531,8 +543,6 @@ class RealizarPrediccionAPIView(APIView):
             return Response({'error': f"Error inesperado: {str(e)}"}, status=500)
 
 
-from django.http import HttpResponse
-import pandas as pd
 
 class DescargarPrediccionesExcelAPIView(APIView):
     def get(self, request):
@@ -587,7 +597,7 @@ class DescargarPrediccionesExcelAPIView(APIView):
             }, status=500)
 
 
-from reportlab.pdfgen import canvas
+
 
 class DescargarPrediccionesPDFAPIView(APIView):
     def get(self, request):
@@ -690,6 +700,64 @@ class DescargarPrediccionesPDFAPIView(APIView):
             return Response({
                 'status': 'error',
                 'message': str(e)
+            }, status=500)
+            
+            
+class PredictionAPIView(APIView):
+    def post(self, request):
+        try:
+            # Obtener los datos del request
+            data = request.data
+            print("Datos recibidos:", data)  # Depuración
+
+            # Validar que los campos requeridos estén presentes
+            required_fields = [
+                'Edad', 'Sexo', 'Soltero', 'Casado', 'UnionLibre', 'Viudo',
+                'TEPT', 'Esquizofrenia', 'Depresion', 'AreaUrbana', 'EstratoSocioeconomico'
+            ]
+            for field in required_fields:
+                if field not in data:
+                    return Response(
+                        {'error': f'El campo {field} es requerido.'},
+                        status=400
+                    )
+
+            # Convertir los datos en un DataFrame
+            df = pd.DataFrame([{
+                'Edad': int(data.get('Edad')),
+                'Sexo': int(data.get('Sexo')),
+                'Soltero': int(data.get('Soltero')),
+                'Casado': int(data.get('Casado')),
+                'UnionLibre': int(data.get('UnionLibre')),
+                'Viudo': int(data.get('Viudo')),
+                'TEPT': int(data.get('TEPT')),
+                'Esquizofrenia': int(data.get('Esquizofrenia')),
+                'Depresion': int(data.get('Depresion')),
+                'AreaUrbana': int(data.get('AreaUrbana')),
+                'EstratoSocioeconomico': int(data.get('EstratoSocioeconomico'))
+            }])
+            print("DataFrame creado:", df)  # Depuración
+
+            # Escalar los datos
+            df_scaled = scaler.transform(df)
+
+            # Hacer la predicción
+            prediction = modelo_completo1.predict(df_scaled)
+            prediction_proba = modelo_completo1.predict_proba(df_scaled)
+
+            # Devolver el resultado
+            return Response({
+                'prediction': int(prediction[0]),
+                'probabilities': prediction_proba.tolist()
+            }, status=200)
+
+        except Exception as e:
+            # Registrar el error
+            print(f"Error: {str(e)}")
+            import traceback
+            traceback.print_exc()  # Imprime el traceback completo
+            return Response({
+                'error': f'Ocurrió un error al procesar la solicitud: {str(e)}'
             }, status=500)
 
 

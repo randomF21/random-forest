@@ -7,6 +7,7 @@ from .views import FechasPrediccionesAPIView
 from .views import RealizarPrediccionAPIView
 from .views import DescargarPrediccionesExcelAPIView
 from .views import DescargarPrediccionesPDFAPIView
+from .views import PredictionAPIView
 
 urlpatterns = [
     path('feature-importance/', FeatureImportanceAPIView.as_view(), name='feature_importance'),
@@ -17,5 +18,6 @@ urlpatterns = [
     path('fechas-predicciones/', FechasPrediccionesAPIView.as_view(), name = 'fechas_predicciones'),
     path('realizar-prediccion', RealizarPrediccionAPIView.as_view(), name='realiza_prediccion'),
     path('descargar-predicciones-excel', DescargarPrediccionesExcelAPIView.as_view(), name='descargar_excel'),
-    path('descargar-predicciones-pdf', DescargarPrediccionesPDFAPIView.as_view(), name='descargar_pdf')
+    path('descargar-predicciones-pdf', DescargarPrediccionesPDFAPIView.as_view(), name='descargar_pdf'),
+    path('predict/', PredictionAPIView.as_view(), name='predict'),
 ]
