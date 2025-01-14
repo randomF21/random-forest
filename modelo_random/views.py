@@ -736,8 +736,7 @@ class PredictionAPIView(APIView):
                 'AreaUrbana': int(data.get('AreaUrbana')),
                 'EstratoSocioeconomico': int(data.get('EstratoSocioeconomico'))
             }])
-            print("DataFrame creado:", df)  # Depuración
-
+            
             # Escalar los datos
             df_scaled = scaler.transform(df)
 
