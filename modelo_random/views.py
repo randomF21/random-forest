@@ -9,6 +9,7 @@ from rest_framework.response import Response
 from collections import Counter
 from django.db.models import Count, Q
 from .models import Prediccion  # Asegúrate de importar el modelo Prediccion
+from .models import PrediccionUsuario
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -16,6 +17,7 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, 
 from django.http import HttpResponse
 from reportlab.pdfgen import canvas
 from sklearn.preprocessing import StandardScaler
+from django.utils import timezone
 
 
 
@@ -743,6 +745,23 @@ class PredictionAPIView(APIView):
             # Hacer la predicción
             prediction = modelo_completo1.predict(df_scaled)
             prediction_proba = modelo_completo1.predict_proba(df_scaled)
+            
+              # Guardar la predicción en la base de datos
+            PrediccionUsuario.objects.create(
+                edad=data.get('Edad'),
+                sexo_biologico="Masculino" if data.get('Sexo') == 1 else "Femenino",
+                estrato_socioeconomico=data.get('EstratoSocioeconomico'),
+                estado_civil="Soltero" if data.get('Soltero') == 1 else "Otro",  # Ajusta según tus datos
+                area_urbana_rural="Urbana" if data.get('AreaUrbana') == 1 else "Rural",
+                comorbilidades=", ".join([
+                    "TEPT" if data.get('TEPT') == 1 else "",
+                    "Esquizofrenia" if data.get('Esquizofrenia') == 1 else "",
+                    "Depresión" if data.get('Depresion') == 1 else ""
+                ]),
+                prediccion=int(prediction[0]),
+                probabilidad_clase_1=float(prediction_proba[0][1]),  # Probabilidad de la clase 1
+                fecha=timezone.now()
+            )
 
             # Devolver el resultado
             return Response({
