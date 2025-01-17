@@ -27,7 +27,7 @@ SECRET_KEY = 'django-insecure-3zxos29tkppta0ihvrz05tj5=3*le889vrq=81w)$8n%j4j=+p
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['api.suicidio.nativoweb.com', 'suicidio.nativoweb.com']
 
 
 # Application definition
@@ -89,38 +89,18 @@ WSGI_APPLICATION = 'django_api.wsgi.application'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.mysql',
-#         'NAME': 'nativowe_db_django', # db_django
-#         'USER': 'nativowe_db_django',
-#         'PASSWORD': 'ehl(@Edy}8iJ',
-#         'HOST': '127.0.0.1',
-#         'PORT': '3306',
-#     }
-# }
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'db_django', # db_django
-        'USER': 'root',
-        'PASSWORD': '1234',
+        'NAME': 'nativowe_db_django', # db_django
+        'USER': 'nativowe_db_django',
+        'PASSWORD': 'ehl(@Edy}8iJ',
         'HOST': '127.0.0.1',
         'PORT': '3306',
     }
 }
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': 'db_django',
-#         'USER': 'postgres',
-#         'PASSWORD': '1234',
-#         'HOST': 'localhost',  # O la dirección del servidor de tu base de datos si no está en tu máquina local
-#         'PORT': '5432',  # El puerto por defecto de PostgreSQL
-#     }
-# }
+
 
 
 # Password validation
@@ -166,8 +146,34 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # configuracion para permitir a un servidor conectarse
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173"
+  "http://suicidio.nativoweb.com",
+  "https://suicidio.nativoweb.com",
 ]
+
+CORS_ALLOW_HEADERS = [
+    "Accept",
+    "Accept-Encoding",
+    "Authorization",
+    "Content-Type",
+    "DNT",
+    "Origin",
+    "User-Agent",
+    "X-CSRFToken",
+    "X-Requested-With",
+    # si usas algún header adicional, inclúyelo
+]
+
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+
+
+CORS_ALLOW_CREDENTIALS = True
 
 SIMPLE_JWT = { 
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),

@@ -135,6 +135,7 @@ def extraer_totales_genero(sexo_biologico):
             masculino += int(cantidad)
     return pd.Series({"Femenino": femenino, "Masculino": masculino})
 
+# Función para procesar el estrato socieconomico en las categorias Bajo, Medio y Alto
 def procesar_estrato_socieconomico(estrato):
     """
     Procesa una cadena de estrato socioeconómico y extrae los totales para Bajo, Medio y Alto.
